@@ -360,14 +360,14 @@
       class="click-zone"
       data-image="아름다운 세상.jpg"
       data-title="아름다운 세상"
-      style="top: 59%; left: 60%; width: 5%; height: 10%;"
+      style="top: 59%; left: 59%; width: 5%; height: 10%;"
     ></div>
     <div
       id="zone-10"
       class="click-zone"
       data-image="붕어빵.jpg"
       data-title="붕어빵"
-      style="top: 59%; left: 70%; width: 5%; height: 10%;"
+      style="top: 61%; left: 70%; width: 5%; height: 10%;"
     ></div>
   </div>
 
@@ -416,15 +416,15 @@
 
     // 구역별 앨범/오디오 매핑
     const zoneData = {
-      'zone-1': { image: '봄이라는 이유로.jpg', title: '봄이라는 이유로', audio: '' },
-      'zone-2': { image: '말의 온도.jpg', title: '말의 온도', audio: '' },
-      'zone-3': { image: '영원하게 하여주오.jpg', title: '영원하게 하여주오', audio: '' },
-      'zone-4': { image: '그 여름, 그 골목.jpg', title: '그 여름, 그 골목', audio: '' },
-      'zone-5': { image: '그리움이 머무는 곳.jpg', title: '그리움이 머무는 곳', audio: '' },
-      'zone-6': { image: '너라는 가을.jpg', title: '너라는 가을', audio: '' },
-      'zone-7': { image: '너와의 크리스마스.jpg', title: '너와의 크리스마스', audio: '' },
-      'zone-8': { image: '우리 보고 싶으면 만나자.jpg', title: '우리 보고 싶으면 만나자', audio: '' },
-      'zone-9': { image: '아름다운 세상.jpg', title: '아름다운 세상', audio: '' },
+      'zone-1': { image: '봄이라는 이유로.jpg', title: '봄이라는 이유로', audio: '봄이라는 이유로.mp3' },
+      'zone-2': { image: '말의 온도.jpg', title: '말의 온도', audio: '말의 온도.mp3' },
+      'zone-3': { image: '영원하게 하여주오.jpg', title: '영원하게 하여주오', audio: '영원하게 하여주오.mp3' },
+      'zone-4': { image: '그 여름, 그 골목.jpg', title: '그 여름, 그 골목', audio: '그 여름, 그 골목.mp3' },
+      'zone-5': { image: '그리움이 머무는 곳.jpg', title: '그리움이 머무는 곳', audio: '그리움이 머무는 곳.mp3' },
+      'zone-6': { image: '너라는 가을.jpg', title: '너라는 가을', audio: '너라는 가을.mp3' },
+      'zone-7': { image: '너와의 크리스마스.jpg', title: '너와의 크리스마스', audio: '너와의 크리스마스.mp3' },
+      'zone-8': { image: '우리 보고 싶으면 만나자.jpg', title: '우리 보고 싶으면 만나자', audio: '우리 보고 싶으면 만나자.mp3' },
+      'zone-9': { image: '아름다운 세상.jpg', title: '아름다운 세상', audio: '아름다운 세상.mp3' },
       'zone-10': { image: '붕어빵.jpg', title: '붕어빵', audio: '붕어빵.mp3' },
     };
 
@@ -433,6 +433,8 @@
     let isMuted = false;
     let lastVolume = parseFloat(bgmVolume.value) || 0.5;
     let wasBgmPlayingBeforeModal = false;
+    let trackPlayRequested = false;
+    let trackHasPlayed = false;
 
     const applyNightMode = () => {
       if (isNight) {
@@ -534,8 +536,22 @@
       updateBgmUI();
     });
 
-    audioPlayer.addEventListener('play', () => setTrackStatus('재생 중'));
-    audioPlayer.addEventListener('pause', () => setTrackStatus('일시정지'));
+    audioPlayer.addEventListener('playing', () => {
+      trackHasPlayed = true;
+      setTrackStatus('재생 중');
+    });
+
+    audioPlayer.addEventListener('play', () => {
+      trackHasPlayed = true;
+      setTrackStatus('재생 중');
+    });
+
+    audioPlayer.addEventListener('pause', () => {
+      if (trackHasPlayed || trackPlayRequested) {
+        setTrackStatus('일시정지');
+      }
+    });
+
     audioPlayer.addEventListener('ended', () => setTrackStatus('재생 완료'));
     audioPlayer.addEventListener('error', () => setTrackStatus('재생 오류'));
 
@@ -571,11 +587,16 @@
       if (audioSrc) {
         audioPlayer.src = audioSrc;
         audioPlayer.load();
-        audioPlayer.play().catch((err) => {
-          console.error('트랙 재생 실패:', err);
-          setTrackStatus('재생 실패');
-        });
+        trackPlayRequested = true;
+        trackHasPlayed = false;
         setTrackStatus('불러오는 중...');
+        audioPlayer.play().then(() => {
+          trackHasPlayed = true;
+          setTrackStatus('재생 중');
+        }).catch((err) => {
+          console.error('트랙 재생 실패:', err);
+          setTrackStatus('재생 실패 (파일 확인)');
+        });
       } else {
         audioPlayer.removeAttribute('src');
         setTrackStatus('트랙 없음');
@@ -609,6 +630,8 @@
       // 트랙 정지
       audioPlayer.pause();
       audioPlayer.currentTime = 0;
+      trackPlayRequested = false;
+      trackHasPlayed = false;
       setTrackStatus('정지');
 
       // 배경음악 재개
