@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Singer Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
   <style>
     /* 전체 화면을 여백 없이 채우는 기본 설정 */
     html, body {
@@ -17,12 +20,93 @@
       background: #000;
     }
 
+    /* 대문 페이지 */
+    #welcome-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #welcome-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #welcome-background {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.3;
+      z-index: -1;
+    }
+
+    .welcome-content {
+      text-align: center;
+      z-index: 1;
+      margin-top: 80px;
+    }
+
+    .welcome-title {
+      font-family: 'Nanum Pen Script', cursive;
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 40px;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5),
+                   0 0 20px rgba(255, 255, 255, 0.3);
+      letter-spacing: 2px;
+    }
+
+    .enter-button {
+      padding: 16px 48px;
+      font-size: 18px;
+      font-weight: 500;
+      color: #ffffff;
+      background: transparent;
+      border: 1px solid rgba(255, 215, 0, 0.6);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2),
+                  inset 0 0 20px rgba(255, 215, 0, 0.05);
+      backdrop-filter: blur(4px);
+      letter-spacing: 1px;
+    }
+
+    .enter-button:hover {
+      border-color: rgba(255, 215, 0, 0.9);
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.4),
+                  inset 0 0 30px rgba(255, 215, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .enter-button:active {
+      transform: translateY(0);
+    }
+
     /* 지도 컨테이너: 기준점 역할 */
     #map-container {
       position: relative;
       width: 100vw;
       height: 100vh; /* 화면 꽉 채우도록 높이를 고정 */
       overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
+    #map-container.visible {
+      opacity: 1;
     }
 
     /* 지도 레이어: 두 장을 겹쳐서 부드럽게 전환 */
@@ -58,6 +142,35 @@
       position: absolute;
       background: transparent;
       cursor: pointer;
+      width: 1cm;
+      height: 1cm;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 클릭 영역 눈에 띄는 빛 효과 */
+    .click-zone::after {
+      content: '';
+      position: absolute;
+      inset: -30%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 250, 200, 0.45), rgba(255, 240, 180, 0.2), rgba(255, 220, 140, 0));
+      box-shadow: 0 0 25px 8px rgba(255, 240, 180, 0.4),
+                  0 0 40px 12px rgba(255, 220, 140, 0.25),
+                  inset 0 0 15px 5px rgba(255, 250, 200, 0.2);
+      opacity: 0.9;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.4s ease;
+      animation: zonePulse 2.5s ease-in-out infinite;
+    }
+
+    .click-zone:hover::after,
+    .click-zone:focus-visible::after {
+      opacity: 1;
+      transform: scale(1.15);
+      box-shadow: 0 0 35px 15px rgba(255, 250, 200, 0.6),
+                  0 0 55px 20px rgba(255, 230, 170, 0.4),
+                  inset 0 0 20px 8px rgba(255, 255, 220, 0.3);
     }
 
     /* 가이드용 보더 & 지팡이 커서 */
@@ -66,6 +179,27 @@
       outline: 1px dashed transparent; /* 가이드선은 투명 처리 */
       outline-offset: -2px;
       cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path fill="%23ffd700" d="M12 2l2.39 4.85L20 7.27l-4 3.9.95 5.53L12 14.77 7.05 16.7 8 11.17l-4-3.9 5.61-.42z"/></svg>') 8 8, pointer;
+    }
+
+    @keyframes zonePulse {
+      0% {
+        box-shadow: 0 0 25px 8px rgba(255, 240, 180, 0.4),
+                    0 0 40px 12px rgba(255, 220, 140, 0.25),
+                    inset 0 0 15px 5px rgba(255, 250, 200, 0.2);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 35px 12px rgba(255, 250, 200, 0.55),
+                    0 0 55px 18px rgba(255, 230, 170, 0.35),
+                    inset 0 0 20px 7px rgba(255, 255, 220, 0.3);
+        transform: scale(1.08);
+      }
+      100% {
+        box-shadow: 0 0 25px 8px rgba(255, 240, 180, 0.4),
+                    0 0 40px 12px rgba(255, 220, 140, 0.25),
+                    inset 0 0 15px 5px rgba(255, 250, 200, 0.2);
+        transform: scale(1);
+      }
     }
 
     /* 오른쪽 상단 컨트롤 스택 */
@@ -207,14 +341,14 @@
       transform: translate(-50%, -50%);
       background: rgba(20, 20, 20, 0.92);
       border-radius: 8px;
-      padding: 14px;
-      width: 400px;
-      height: 500px;
+      padding: 12px;
+      width: 480px;
+      height: 140px;
       color: #f5f5f5;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      display: grid;
-      gap: 12px;
-      text-align: center;
+      display: flex;
+      gap: 14px;
+      align-items: center;
     }
 
     #player-modal .close-btn {
@@ -230,17 +364,35 @@
     }
 
     #current-album-art {
-      width: 100%;
-      height: auto;
-      max-height: 260px;
-      border-radius: 12px;
+      width: 120px;
+      height: 120px;
+      min-width: 120px;
+      border-radius: 8px;
       object-fit: cover;
+    }
+
+    .modal-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
     }
 
     #current-song-title {
       margin: 0;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 600;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #track-status {
+      font-size: 11px;
+      opacity: 0.85;
+      text-align: left;
     }
 
     #audio-player {
@@ -249,6 +401,15 @@
   </style>
 </head>
 <body>
+  <!-- 대문 페이지 -->
+  <div id="welcome-screen">
+    <img id="welcome-background" src="village_map.png" alt="마을 배경" />
+    <div class="welcome-content">
+      <h1 class="welcome-title">따뜻한 눈이 내리는 마을에 오신 것을 환영합니다</h1>
+      <button id="enter-button" class="enter-button" type="button">입장하기</button>
+    </div>
+  </div>
+
   <div id="map-container">
     <div id="control-stack">
       <div id="mode-card" class="control-card">
@@ -274,7 +435,7 @@
         <div id="bgm-controls">
           <div class="button-row">
             <button id="bgm-toggle" class="btn-ghost" type="button">재생</button>
-            <button id="bgm-mute" class="btn-ghost" type="button">음소거</button>
+           
           </div>
           <div id="bgm-volume-row">
             <label for="bgm-volume">볼륨</label>
@@ -296,27 +457,27 @@
     <img id="map-day" class="map-layer" src="village_map.png" alt="마을 항공샷 낮" />
     <img id="map-night" class="map-layer" src="village_map.night.jpg" alt="마을 항공샷 밤" />
 
-    <!-- 임시 위치로 중앙 부근에 배치된 9개 영역 (나중에 top/left/width/height 수정 가능) -->
+    <!-- 클릭 가능한 원형 영역들 (지름 1cm) -->
     <div
       id="zone-1"
       class="click-zone"
       data-image="봄이라는 이유로.jpg"
       data-title="봄이라는 이유로.mp3"
-      style="top: 30%; left: 11%; width: 5%; height: 10%;"
+      style="top: 30%; left: 11%;"
     ></div>
     <div
       id="zone-2"
       class="click-zone"
       data-image="말의 온도.jpg"
       data-title="말의 온도.mp3"
-      style="top: 10%; left: 79%; width: 5%; height: 10%;"
+      style="top: 10%; left: 79%;"
     ></div>
     <div
       id="zone-3"
       class="click-zone"
       data-image="영원하게 하여주오.jpg"
       data-title="영원하게 하여주오.mp3"
-      style="top: 51%; left: 47%; width: 5%; height: 10%;"
+      style="top: 51%; left: 47%;"
     ></div>
 
     <div
@@ -324,21 +485,21 @@
       class="click-zone"
       data-image="그 여름, 그 골목.jpg"
       data-title="그 여름, 그 골목.mp3"
-      style="top: 44%; left: 79%; width: 5%; height: 10%;"
+      style="top: 44%; left: 79%;"
     ></div>
     <div
       id="zone-5"
       class="click-zone"
       data-image="그리움이 머무는 곳.jpg"
       data-title="그리움이 머무는 곳.mp3"
-      style="top: 36%; left: 47%; width: 5%; height: 10%;"
+      style="top: 36%; left: 47%;"
     ></div>
     <div
       id="zone-6"
       class="click-zone"
       data-image="너라는 가을.jpg"
       data-title="너라는 가을.mp3"
-      style="top: 40%; left: 2%; width: 5%; height: 10%;"
+      style="top: 40%; left: 2%;"
     ></div>
 
     <div
@@ -346,28 +507,28 @@
       class="click-zone"
       data-image="너와의 크리스마스.jpg"
       data-title="너와의 크리스마스.mp3"
-      style="top: 32%; left: 27%; width: 5%; height: 10%;"
+      style="top: 32%; left: 27%;"
     ></div>
     <div
       id="zone-8"
       class="click-zone"
       data-image="우리 보고 싶으면 만나자.jpg"
       data-title="우리 보고 싶으면 만나자.mp3"
-      style="top: 8%; left: 68%; width: 5%; height: 10%;"
+      style="top: 8%; left: 68%;"
     ></div>
     <div
       id="zone-9"
       class="click-zone"
       data-image="아름다운 세상.jpg"
       data-title="아름다운 세상.mp3"
-      style="top: 59%; left: 59%; width: 5%; height: 10%;"
+      style="top: 59%; left: 59%;"
     ></div>
     <div
       id="zone-10"
       class="click-zone"
       data-image="붕어빵.jpg"
       data-title="붕어빵.mp3"
-      style="top: 61%; left: 70%; width: 5%; height: 10%;"
+      style="top: 61%; left: 70%;"
     ></div>
   </div>
 
@@ -376,20 +537,24 @@
     <div class="modal-content">
       <button class="close-btn" type="button" aria-label="닫기">✕</button>
       <img id="current-album-art" src="" alt="앨범 커버" />
-      <h3 id="current-song-title">노래 제목</h3>
-      <div id="track-status" style="font-size: 12px; opacity: 0.9;">정지</div>
-      <audio id="audio-player" controls></audio>
+      <div class="modal-info">
+        <h3 id="current-song-title">노래 제목</h3>
+        <div id="track-status">정지</div>
+        <audio id="audio-player" controls></audio>
+      </div>
     </div>
   </div>
 
   <!-- 배경음악 (파일명을 교체해 사용하세요) -->
-  <audio id="bgm-audio" src="따뜻한 눈이 내리는 마을.mp3" loop preload="metadata"></audio>
+  <audio id="bgm-audio" src="따뜻한 눈이 내리는 마을(1).mp3" loop preload="metadata"></audio>
 
   <script>
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const enterButton = document.getElementById('enter-button');
     const mapContainer = document.getElementById('map-container');
     const modeSlider = document.getElementById('mode-slider');
     const bgmToggle = document.getElementById('bgm-toggle');
-    const bgmMuteBtn = document.getElementById('bgm-mute');
+    const bgmMuteBtn = null; // 음소거 버튼 제거됨
     const bgmVolume = document.getElementById('bgm-volume');
     const bgmVolumeValue = document.getElementById('bgm-volume-value');
     const dayImg = document.getElementById('map-day');
@@ -406,6 +571,31 @@
     const bgmStatus = document.getElementById('bgm-status');
 
     const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+    // 배경음악 자동 재생 시도
+    const tryPlayBgm = async () => {
+      try {
+        await bgmAudio.play();
+        isBgmOn = true;
+        updateBgmUI();
+      } catch (err) {
+        console.log('자동 재생 실패 (브라우저 정책):', err);
+        // 자동 재생이 실패해도 UI는 업데이트하지 않음
+      }
+    };
+
+    // 페이지 로드 시 자동 재생 시도
+    window.addEventListener('load', () => {
+      tryPlayBgm();
+    });
+
+    // 입장하기 버튼 클릭 시 대문 숨기고 지도 표시, 배경음악 재생 시도
+    enterButton.addEventListener('click', async () => {
+      welcomeScreen.classList.add('hidden');
+      mapContainer.classList.add('visible');
+      // 입장하기 버튼 클릭은 사용자 상호작용이므로 재생 가능
+      await tryPlayBgm();
+    });
 
     // 밤 이미지 사전 로드 (브라우저가 캐시하도록)
     if (nightImg.complete === false) {
@@ -460,7 +650,6 @@
 
     const updateBgmUI = () => {
       bgmToggle.textContent = isBgmOn ? '일시정지' : '재생';
-      bgmMuteBtn.textContent = isMuted ? '음소거 해제' : '음소거';
       bgmVolumeValue.textContent = `${Math.round(bgmAudio.volume * 100)}%`;
       bgmStatus.textContent = isBgmOn ? '재생 중' : '정지';
     };
@@ -490,17 +679,7 @@
       setBgmVolume(parseFloat(e.target.value) || 0, { fromSlider: true });
     });
 
-    bgmMuteBtn.addEventListener('click', () => {
-      if (!isMuted) {
-        lastVolume = bgmAudio.volume || lastVolume || 0.5;
-        setBgmVolume(0);
-        isMuted = true;
-      } else {
-        setBgmVolume(lastVolume || 0.5);
-        isMuted = false;
-      }
-      updateBgmUI();
-    });
+    // 음소거 버튼 제거됨
 
     bgmToggle.addEventListener('click', async () => {
       if (!isBgmOn) {
